@@ -49,7 +49,6 @@ struct inet_diag_entry {
 	struct in6_addr daddr_storage;	/* for IPv4-mapped-IPv6 addresses */
 #endif
 	u32 ifindex;
-	u32 mark;
 };
 
 static DEFINE_MUTEX(inet_diag_table_mutex);
@@ -518,14 +517,6 @@ static int inet_diag_bc_run(const struct nlattr *_bc,
 
 			ifindex = *((const u32 *)(op + 1));
 			if (ifindex != entry->ifindex)
-				yes = 0;
-			break;
-		}
-		case INET_DIAG_BC_MARK_COND: {
-			struct inet_diag_markcond *cond;
-
-			cond = (struct inet_diag_markcond *)(op + 1);
-			if ((entry->mark & cond->mask) != cond->mark)
 				yes = 0;
 			break;
 		}
