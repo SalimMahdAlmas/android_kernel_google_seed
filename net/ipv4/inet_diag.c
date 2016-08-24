@@ -49,6 +49,7 @@ struct inet_diag_entry {
 	struct in6_addr daddr_storage;	/* for IPv4-mapped-IPv6 addresses */
 #endif
 	u32 ifindex;
+	u32 mark;
 };
 
 static DEFINE_MUTEX(inet_diag_table_mutex);
@@ -520,6 +521,14 @@ static int inet_diag_bc_run(const struct nlattr *_bc,
 				yes = 0;
 			break;
 		}
+		case INET_DIAG_BC_MARK_COND: {
+			struct inet_diag_markcond *cond;
+
+			cond = (struct inet_diag_markcond *)(op + 1);
+			if ((entry->mark & cond->mask) != cond->mark)
+				yes = 0;
+			break;
+		}
 		}
 
 		if (yes) {
@@ -641,8 +650,17 @@ static inline bool valid_port_comparison(const struct inet_diag_bc_op *op,
 	return true;
 }
 
-static int inet_diag_bc_audit(const struct nlattr *attr)
+static bool valid_markcond(const struct inet_diag_bc_op *op, int len,
+			   int *min_len)
 {
+	*min_len += sizeof(struct inet_diag_markcond);
+	return len >= *min_len;
+}
+
+static int inet_diag_bc_audit(const struct nlattr *attr,
+			      const struct sk_buff *skb)
+{
+	bool net_admin = ns_capable(sock_net(skb->sk)->user_ns, CAP_NET_ADMIN);
 	const void *bytecode, *bc;
 	int bytecode_len, len;
 
@@ -1170,7 +1188,7 @@ static int inet_diag_rcv_msg_compat(struct sk_buff *skb, struct nlmsghdr *nlh)
 
 			attr = nlmsg_find_attr(nlh, hdrlen,
 					       INET_DIAG_REQ_BYTECODE);
-			err = inet_diag_bc_audit(attr);
+			err = inet_diag_bc_audit(attr, skb);
 			if (err)
 				return err;
 		}
@@ -1201,7 +1219,7 @@ static int inet_diag_handler_cmd(struct sk_buff *skb, struct nlmsghdr *h)
 
 			attr = nlmsg_find_attr(h, hdrlen,
 					       INET_DIAG_REQ_BYTECODE);
-			err = inet_diag_bc_audit(attr);
+			err = inet_diag_bc_audit(attr, skb);
 			if (err)
 				return err;
 		}

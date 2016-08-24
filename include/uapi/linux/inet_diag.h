@@ -73,6 +73,7 @@ enum {
 	INET_DIAG_BC_S_COND,
 	INET_DIAG_BC_D_COND,
 	INET_DIAG_BC_DEV_COND,   /* u32 ifindex */
+	INET_DIAG_BC_MARK_COND,
 };
 
 struct inet_diag_hostcond {
