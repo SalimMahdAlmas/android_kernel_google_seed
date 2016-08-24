@@ -641,17 +641,8 @@ static inline bool valid_port_comparison(const struct inet_diag_bc_op *op,
 	return true;
 }
 
-static bool valid_markcond(const struct inet_diag_bc_op *op, int len,
-			   int *min_len)
+static int inet_diag_bc_audit(const struct nlattr *attr)
 {
-	*min_len += sizeof(struct inet_diag_markcond);
-	return len >= *min_len;
-}
-
-static int inet_diag_bc_audit(const struct nlattr *attr,
-			      const struct sk_buff *skb)
-{
-	bool net_admin = ns_capable(sock_net(skb->sk)->user_ns, CAP_NET_ADMIN);
 	const void *bytecode, *bc;
 	int bytecode_len, len;
 
@@ -1179,7 +1170,7 @@ static int inet_diag_rcv_msg_compat(struct sk_buff *skb, struct nlmsghdr *nlh)
 
 			attr = nlmsg_find_attr(nlh, hdrlen,
 					       INET_DIAG_REQ_BYTECODE);
-			err = inet_diag_bc_audit(attr, skb);
+			err = inet_diag_bc_audit(attr);
 			if (err)
 				return err;
 		}
@@ -1210,7 +1201,7 @@ static int inet_diag_handler_cmd(struct sk_buff *skb, struct nlmsghdr *h)
 
 			attr = nlmsg_find_attr(h, hdrlen,
 					       INET_DIAG_REQ_BYTECODE);
-			err = inet_diag_bc_audit(attr, skb);
+			err = inet_diag_bc_audit(attr);
 			if (err)
 				return err;
 		}
